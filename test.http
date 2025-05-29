@@ -1,0 +1,13 @@
+@baseUrl = 
+
+
+POST {{baseUrl}}/log HTTP/1.1
+content-type: application/json
+
+{
+  "appName": "Foo"
+}
+
+###
+
+GET {{baseUrl}}/report HTTP/1.1

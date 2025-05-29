@@ -1,0 +1,65 @@
+service: daily-access-logger
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  environment:
+    TABLE_NAME: AccessLogs
+    EMAIL_FROM: ${env:EMAIL_FROM}
+    EMAIL_TO:   ${env:EMAIL_TO}
+  iam:
+    role:
+      statements: # permissions for all of your functions can be set here
+        - Effect: Allow
+          Action: # Gives permission to DynamoDB tables in a specific region
+            - dynamodb:Scan
+            - dynamodb:PutItem
+          Resource: 'arn:aws:dynamodb:us-east-1:*:*'
+
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+          Resource: 'arn:aws:ses:us-east-1:*:*'
+
+functions:
+  log-access:
+    handler: src/functions/log-access.handler
+    events:
+      - http:
+          path: /log
+          method: post
+          cors: true
+
+  daily-report:
+    handler: src/functions/daily-report.handler
+    events:
+      # Cron runs every day at 23:00 UTC  (≘ 20:00 America/Sao_Paulo all year)
+      - eventBridge:
+          schedule: cron(0 23 * * ? *)
+      # Extra GET endpoint for testing
+      - http:
+          path: /report
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    AccessTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: AccessLogs
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id  
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+
+plugins:
+  - serverless-dotenv-plugin
