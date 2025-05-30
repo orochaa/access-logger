@@ -1,3 +1,4 @@
+/* eslint-disable no-secrets/no-secrets */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { SendEmailCommand } from '@aws-sdk/client-ses'
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'
@@ -70,47 +71,77 @@ export const handler: APIGatewayProxyHandler = async () => {
         (appReport.locales[item.meta.locale] || 0) + 1
     }
 
-    const sections = [...apps.entries()].map(([appName, appReport]) => {
-      const browserSummary = Object.entries(appReport.browsers)
-        .map(([b, n]) => `${b}: ${n}`)
-        .join(', ')
-      const osSummary = Object.entries(appReport.os)
-        .map(([o, n]) => `${o}: ${n}`)
-        .join(', ')
-      const localeSummary = Object.entries(appReport.locales)
-        .map(([l, n]) => `${l}: ${n}`)
-        .join(', ')
+    const appSections = [...apps.entries()]
+      .map(([appName, appReport]) => {
+        const browserSummary = Object.entries(appReport.browsers)
+          .map(([b, n]) => `${b}: ${n}`)
+          .join(', ')
+        const osSummary = Object.entries(appReport.os)
+          .map(([o, n]) => `${o}: ${n}`)
+          .join(', ')
+        const localeSummary = Object.entries(appReport.locales)
+          .map(([l, n]) => `${l}: ${n}`)
+          .join(', ')
 
-      return `
-## ${appName}
+        const rows = appReport.accesses
+          .map(access => {
+            const m = access.meta
 
-Accesses: ${appReport.accesses.length}
-Browsers: ${browserSummary}
-OS:       ${osSummary}
-Locales:  ${localeSummary}
+            return `
+<tr>
+  ${td(formatDate(access.timestamp))}
+  ${td(`${m.timezone} / ${m.locale}`)}
+  ${td(`${m.os.name} ${m.os.version}`)}
+  ${td(`${m.browser.name} ${m.browser.version}`)}
+  ${td(`${m.device.type} ${m.device.model}`)}
+</tr>`.trim()
+          })
+          .join('')
 
-Logs:
-${appReport.accesses
-  .map(
-    access =>
-      `[${formatDate(access.timestamp)}] ${[
-        `locale: ${access.meta.timezone} ${access.meta.locale}`,
-        `os: ${access.meta.os.name}@${access.meta.os.version} ${access.meta.platform}`,
-        `browser: ${access.meta.browser.name}@${access.meta.browser.version}`,
-        `device: ${access.meta.device.type}@${access.meta.device.model}`,
-      ].join(', ')}`
-  )
-  .join('\n')}
+        return `
+<h2 style="margin:24px 0 8px;color:#2d3a4a;">${appName}</h2>
+<p style="margin:4px 0;">
+  <strong>Accesses:</strong> ${appReport.accesses.length}<br/>
+  <strong>Browsers:</strong> ${browserSummary}<br/>
+  <strong>OS:</strong> ${osSummary}<br/>
+  <strong>Locales:</strong> ${localeSummary}
+</p>
+<table style="border-collapse:collapse;font-family:monospace;font-size:13px;margin-top:8px;">
+  <thead>
+    <tr>
+      ${th('Timestamp')}
+      ${th('Locale / TZ')}
+      ${th('OS')}
+      ${th('Browser')}
+      ${th('Device')}
+    </tr>
+  </thead>
+  <tbody>
+    ${rows}
+  </tbody>
+</table>
 `.trim()
-    })
+      })
+      .join('')
 
     const mailContent = `
-# Daily Access Report
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Daily Access Report</title>
+</head>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#333;line-height:1.5;margin:0;padding:24px;">
+  <h1 style="margin-top:0;color:#1e293b;">Daily Access Report</h1>
 
-Accesses: ${count}
-Window: ${formatDate(start)} → ${formatDate(end)}
+  <p style="margin:4px 0 16px;">
+    <strong>Accesses:</strong> ${count}<br/>
+    <strong>Window (UTC):</strong> ${formatDate(start)} → ${formatDate(end)}
+  </p>
 
-${sections.join('\n\n')}
+  ${appSections}
+</body>
+</html>
 `.trim()
 
     await ses.send(
@@ -119,7 +150,7 @@ ${sections.join('\n\n')}
         Destination: { ToAddresses: [EMAIL_TO] },
         Message: {
           Subject: { Data: `Daily Access Report` },
-          Body: { Text: { Data: mailContent } },
+          Body: { Html: { Data: mailContent } },
         },
       })
     )
@@ -134,4 +165,12 @@ ${sections.join('\n\n')}
 
 function formatDate(date: Date): string {
   return date.toLocaleString('pt-br')
+}
+
+const td = (txt: string): string => {
+  return `<td style="padding:4px 8px;border:1px solid #ccc;">${txt}</td>`
+}
+
+const th = (txt: string): string => {
+  return `<th style="padding:4px 8px;background:#f5f5f5;border:1px solid #ccc;text-align:left;">${txt}</th>`
 }
