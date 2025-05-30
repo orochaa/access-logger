@@ -31,6 +31,7 @@ export const handler: APIGatewayProxyHandler = async () => {
     )
 
     const items = ((res.Items ?? []) as DynamoAccessLog[])
+      .filter(item => !/(localhost|127\.0\.0\.1)/.test(item.meta.pageUrl))
       .map(item => ({ ...item, timestamp: new Date(item.timestamp) }))
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
     const count = items.length
