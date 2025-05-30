@@ -91,14 +91,16 @@ Locales:  ${localeSummary}
 
 Logs:
 ${appReport.accesses
-  .map(access =>
-    JSON.stringify(
-      { ...access.meta, timestamp: formatDate(access.timestamp) },
-      null,
-      2
-    )
+  .map(
+    access =>
+      `[${formatDate(access.timestamp)}] ${[
+        `locale: ${access.meta.timezone} ${access.meta.locale}`,
+        `os: ${access.meta.os.name}@${access.meta.os.version} ${access.meta.platform}`,
+        `browser: ${access.meta.browser.name}@${access.meta.browser.version}`,
+        `device: ${access.meta.device.type}@${access.meta.device.model}`,
+      ].join(', ')}`
   )
-  .join(',\n')}
+  .join('\n')}
 `.trim()
     })
 
