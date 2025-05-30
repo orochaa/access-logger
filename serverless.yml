@@ -7,7 +7,8 @@ provider:
   environment:
     TABLE_NAME: AccessLogs
     EMAIL_FROM: ${env:EMAIL_FROM}
-    EMAIL_TO:   ${env:EMAIL_TO}
+    EMAIL_TO: ${env:EMAIL_TO}
+    GIPHY_ACCESS_TOKEN: ${env:GIPHY_ACCESS_TOKEN}
   iam:
     role:
       statements: # permissions for all of your functions can be set here
