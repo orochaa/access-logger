@@ -1,6 +1,6 @@
-# 📊 Daily Access Logger & Reporter
+# 📊 Access Logger & Reporter
 
-This project tracks daily web app usage by logging frontend access events to DynamoDB and generating email reports summarizing usage patterns. It's built with AWS Lambda, DynamoDB, SES, and the Serverless Framework.
+This project tracks web app usage by logging frontend access events to DynamoDB and generating email reports summarizing usage patterns. It's built with AWS Lambda, DynamoDB, SES, and the Serverless Framework.
 
 ## 🌐 Overview
 
