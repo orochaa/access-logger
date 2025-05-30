@@ -13,8 +13,8 @@ const EMAIL_TO = process.env.EMAIL_TO!
 export const handler: APIGatewayProxyHandler = async () => {
   try {
     const now = new Date()
-    const end = now.toISOString()
-    const start = new Date(now.getTime() - 86_400_000).toISOString()
+    const end = now
+    const start = new Date(now.getTime() - 86_400_000)
 
     const res = await dynamo.send(
       new ScanCommand({
@@ -24,8 +24,8 @@ export const handler: APIGatewayProxyHandler = async () => {
           '#ts': 'timestamp',
         },
         ExpressionAttributeValues: {
-          ':start': start,
-          ':end': end,
+          ':start': start.toISOString(),
+          ':end': end.toISOString(),
         },
       })
     )
@@ -36,37 +36,78 @@ export const handler: APIGatewayProxyHandler = async () => {
     const count = items.length
 
     if (count === 0) {
-      return response(204)
+      return response(204, { message: 'There is nothing to report' })
     }
 
-    const apps = new Map<string, AccessLog[]>()
+    interface AppReport {
+      accesses: AccessLog[]
+      browsers: Record<string, number>
+      os: Record<string, number>
+      locales: Record<string, number>
+    }
+    const apps = new Map<string, AppReport>()
 
     for (const item of items) {
-      let accessList = apps.get(item.appName)
+      let appReport = apps.get(item.appName)
 
-      if (!accessList) {
-        accessList = []
-        apps.set(item.appName, accessList)
+      if (!appReport) {
+        appReport = {
+          accesses: [],
+          browsers: {},
+          locales: {},
+          os: {},
+        }
+        apps.set(item.appName, appReport)
       }
 
-      accessList.push(item)
+      appReport.accesses.push(item)
+      appReport.browsers[item.meta.browser.name] =
+        (appReport.browsers[item.meta.browser.name] || 0) + 1
+      appReport.os[item.meta.os.name] =
+        (appReport.os[item.meta.os.name] || 0) + 1
+      appReport.locales[item.meta.locale] =
+        (appReport.locales[item.meta.locale] || 0) + 1
     }
+
+    const sections = [...apps.entries()].map(([appName, appReport]) => {
+      const browserSummary = Object.entries(appReport.browsers)
+        .map(([b, n]) => `${b}: ${n}`)
+        .join(', ')
+      const osSummary = Object.entries(appReport.os)
+        .map(([o, n]) => `${o}: ${n}`)
+        .join(', ')
+      const localeSummary = Object.entries(appReport.locales)
+        .map(([l, n]) => `${l}: ${n}`)
+        .join(', ')
+
+      return `
+## ${appName}
+
+Accesses: ${appReport.accesses.length}
+Browsers: ${browserSummary}
+OS:       ${osSummary}
+Locales:  ${localeSummary}
+
+Logs:
+${appReport.accesses
+  .map(access =>
+    JSON.stringify(
+      { ...access.meta, timestamp: formatDate(access.timestamp) },
+      null,
+      2
+    )
+  )
+  .join(',\n')}
+`.trim()
+    })
 
     const mailContent = `
 # Daily Access Report
 
-Window (UTC): ${start}  →  ${end}
-Count: ${count}
+Accesses: ${count}
+Window: ${formatDate(start)} → ${formatDate(end)}
 
-${[...apps]
-  .map(([app, accessList]) =>
-    `
-## ${app}
-
-${accessList.map(access => `* ${access.timestamp.toISOString()}`).join('\n')}
-`.trim()
-  )
-  .join('\n')}
+${sections.join('\n\n')}
 `.trim()
 
     await ses.send(
@@ -86,4 +127,8 @@ ${accessList.map(access => `* ${access.timestamp.toISOString()}`).join('\n')}
 
     return response(500, { message: 'Internal Server Error' })
   }
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleString('pt-br')
 }

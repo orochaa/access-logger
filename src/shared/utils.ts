@@ -11,6 +11,9 @@ export function response(
     statusCode,
     headers: {
       'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'GET,POST',
     },
     body: JSON.stringify(body),
   }
