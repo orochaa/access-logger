@@ -70,13 +70,14 @@ async function getAccessLogs(): Promise<AccessLog[]> {
 }
 
 interface AppReport {
+  appName: string
   accesses: AccessLog[]
   browsers: Record<string, number>
   os: Record<string, number>
   locales: Record<string, number>
 }
 
-function generateReport(accessLogs: AccessLog[]): Map<string, AppReport> {
+function generateReport(accessLogs: AccessLog[]): AppReport[] {
   const report = new Map<string, AppReport>()
 
   for (const accessLog of accessLogs) {
@@ -84,6 +85,7 @@ function generateReport(accessLogs: AccessLog[]): Map<string, AppReport> {
 
     if (!appReport) {
       appReport = {
+        appName: accessLog.appName,
         accesses: [],
         browsers: {},
         locales: {},
@@ -101,17 +103,22 @@ function generateReport(accessLogs: AccessLog[]): Map<string, AppReport> {
       (appReport.locales[accessLog.meta.locale] || 0) + 1
   }
 
-  return report
+  return [...report]
+    .map(([_, appReport]) => appReport)
+    .sort((a, b) => {
+      const lengthCompareResult = b.accesses.length - a.accesses.length
+
+      return lengthCompareResult === 0
+        ? a.appName.localeCompare(b.appName)
+        : lengthCompareResult
+    })
 }
 
-function formatReport(
-  report: Map<string, AppReport>,
-  randomGifUrl: string
-): string {
+function formatReport(report: AppReport[], randomGifUrl: string): string {
   let count = 0
 
-  const appSections = [...report.entries()]
-    .map(([appName, appReport]) => {
+  const appSections = report
+    .map(appReport => {
       count += appReport.accesses.length
 
       const browserSummary = Object.entries(appReport.browsers)
@@ -140,7 +147,7 @@ function formatReport(
         .join('')
 
       return `
-<h2 style="margin:24px 0 8px;color:#2d3a4a;">${appName}</h2>
+<h2 style="margin:24px 0 8px;color:#2d3a4a;">${appReport.appName}</h2>
 <p style="margin:4px 0;">
   <strong>Accesses:</strong> ${appReport.accesses.length}<br/>
   <strong>Browsers:</strong> ${browserSummary}<br/>
