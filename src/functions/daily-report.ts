@@ -11,10 +11,6 @@ const TABLE_NAME = process.env.TABLE_NAME!
 const EMAIL_FROM = process.env.EMAIL_FROM!
 const EMAIL_TO = process.env.EMAIL_TO!
 
-const NOW = new Date()
-const START = new Date(NOW.getTime() - 86_400_000)
-const END = NOW
-
 export const handler: APIGatewayProxyHandler = async () => {
   try {
     const accessLogs = await getAccessLogs()
@@ -47,6 +43,9 @@ export const handler: APIGatewayProxyHandler = async () => {
 }
 
 async function getAccessLogs(): Promise<AccessLog[]> {
+  const NOW = new Date()
+  const START = new Date(NOW.getTime() - 86_400_000)
+
   const res = await dynamo.send(
     new ScanCommand({
       TableName: TABLE_NAME,
@@ -56,7 +55,7 @@ async function getAccessLogs(): Promise<AccessLog[]> {
       },
       ExpressionAttributeValues: {
         ':start': START.toISOString(),
-        ':end': END.toISOString(),
+        ':end': NOW.toISOString(),
       },
     })
   )
@@ -116,6 +115,9 @@ function generateReport(accessLogs: AccessLog[]): AppReport[] {
 
 function formatReport(report: AppReport[], randomGifUrl: string): string {
   let count = 0
+  const NOW = new Date()
+  const END = NOW
+  const START = new Date(NOW.getTime() - 86_400_000)
 
   const appSections = report
     .map(appReport => {

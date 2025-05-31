@@ -1,13 +1,15 @@
 # "org" ensures this Service is used with the correct Serverless Framework Access Key.
 org: orochaa
 # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-app: daily-access-logger
-service: daily-access-logger
+app: access-logger
+service: access-logger
 
 provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
+  memorySize: 512
+  versionFunctions: false
   environment:
     TABLE_NAME: AccessLogs
     EMAIL_FROM: ${env:EMAIL_FROM}

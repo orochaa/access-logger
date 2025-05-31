@@ -1,5 +1,5 @@
 {
-  "name": "daily-access-logger",
+  "name": "access-logger",
   "type": "module",
   "scripts": {
     "lint": "run-s lint:tsc lint:prettier lint:eslint",
