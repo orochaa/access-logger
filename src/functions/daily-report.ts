@@ -190,7 +190,9 @@ function formatReport(
 }
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleString('pt-br')
+  return date.toLocaleString('pt-br', {
+    timeZone: 'America/Sao_Paulo',
+  })
 }
 
 const td = (txt: string): string => {
