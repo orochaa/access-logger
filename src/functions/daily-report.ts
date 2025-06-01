@@ -144,6 +144,7 @@ function formatReport(report: AppReport[], randomGifUrl: string): string {
   ${td(`${m.os.name} ${m.os.version}`)}
   ${td(`${m.browser.name} ${m.browser.version}`)}
   ${td(`${m.device.type} ${m.device.model}`)}
+  ${td(m.referrer)}
 </tr>`.trim()
         })
         .join('')
@@ -164,6 +165,7 @@ function formatReport(report: AppReport[], randomGifUrl: string): string {
       ${th('OS')}
       ${th('Browser')}
       ${th('Device')}
+      ${th('Referrer')}
     </tr>
   </thead>
   <tbody>
