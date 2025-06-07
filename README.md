@@ -62,9 +62,9 @@ await fetch('https://your-api.com/dev/log-access', {
 
 The daily report includes:
 
+- Random celebration GIF, powered by Giphy
 - Total access count
 - Breakdown by:
-
   - App
   - Browsers
   - Operating systems
