@@ -50,6 +50,14 @@ functions:
           method: get
           cors: true
 
+  contact:
+    handler: src/functions/contact.handler
+    events:
+      - http:
+          path: /contact
+          method: post
+          cors: true
+
 resources:
   Resources:
     AccessTable:

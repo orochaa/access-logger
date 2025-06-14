@@ -1,4 +1,4 @@
-@baseUrl = 
+@baseUrl = https://jff32ji7je.execute-api.us-east-1.amazonaws.com/dev
 
 
 POST {{baseUrl}}/log HTTP/1.1
