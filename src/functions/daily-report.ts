@@ -4,6 +4,7 @@ import { SendEmailCommand } from '@aws-sdk/client-ses'
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
 import { dynamo } from '../shared/dynamodb-client.js'
+import { getRandomGifUrl } from '../shared/gif.js'
 import { ses } from '../shared/ses-client.js'
 import { response } from '../shared/utils.js'
 
@@ -212,38 +213,4 @@ const td = (txt: string): string => {
 
 const th = (txt: string): string => {
   return `<th style="padding:4px 8px;background:#f5f5f5;border:1px solid #ccc;text-align:left;">${txt}</th>`
-}
-
-async function getRandomGifUrl(): Promise<string> {
-  const url = new URL('https://api.giphy.com/v1/gifs/search')
-  url.searchParams.set('api_key', process.env.GIPHY_ACCESS_TOKEN ?? '')
-  url.searchParams.set('q', 'celebration')
-  url.searchParams.set('offset', String(randomNumberBetween(0, 25)))
-  url.searchParams.set('limit', String(25))
-  url.searchParams.set('rating', 'g')
-  url.searchParams.set('lang', 'en')
-  url.searchParams.set('bundle', 'messaging_non_clips')
-
-  const res = await fetch(url.toString())
-
-  if (!res.ok) {
-    console.error(
-      `Giphy API error: ${res.status} ${res.statusText}`,
-      await res.text()
-    )
-
-    return ''
-  }
-
-  const { data } = (await res.json()) as {
-    data: { images: { original: { url: string } } }[]
-  }
-  const gifList = data.map(item => item.images.original.url)
-  const randomGif = gifList[randomNumberBetween(0, gifList.length - 1)]
-
-  return randomGif
-}
-
-function randomNumberBetween(n1: number, n2: number): number {
-  return Math.floor(Math.random() * (n2 - n1 + 1)) + n1
 }
