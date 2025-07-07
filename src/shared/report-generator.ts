@@ -1,26 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { SendEmailCommand } from '@aws-sdk/client-ses'
-import { ses } from './ses-client.js'
-
-const EMAIL_FROM = process.env.EMAIL_FROM!
-const EMAIL_TO = process.env.EMAIL_TO!
-
-export async function sendReportEmail(
-  subject: string,
-  htmlBody: string
-): Promise<void> {
-  await ses.send(
-    new SendEmailCommand({
-      Source: EMAIL_FROM,
-      Destination: { ToAddresses: [EMAIL_TO] },
-      Message: {
-        Subject: { Data: subject },
-        Body: { Html: { Data: htmlBody } },
-      },
-    })
-  )
-}
-
 export function formatHtmlShell(
   title: string,
   content: string,

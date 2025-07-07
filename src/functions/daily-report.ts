@@ -7,8 +7,8 @@ import {
   formatReport,
   generateNoAccessReportContent,
   generateReport,
-  sendReportEmail,
 } from '../shared/report-generator.js'
+import { sendEmail } from '../shared/ses-client.js'
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
@@ -31,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       reportContent,
       randomGifUrl
     )
-    await sendReportEmail('Daily Access Report', formattedReport)
+    await sendEmail('Daily Access Report', formattedReport)
 
     return { statusCode: 200, body: JSON.stringify({ message: 'Report sent' }) }
   } catch (error) {

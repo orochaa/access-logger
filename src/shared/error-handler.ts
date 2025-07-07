@@ -1,12 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { SendEmailCommand } from '@aws-sdk/client-ses'
 import type { APIGatewayProxyResult } from 'aws-lambda'
-import { ses } from './ses-client.js'
+import { sendEmail } from './ses-client.js'
 import { response } from './utils.js'
-
-const EMAIL_FROM = process.env.EMAIL_FROM!
-const EMAIL_TO = process.env.EMAIL_TO!
 
 async function sendErrorEmail(error: Error): Promise<void> {
   const emailBody = `
@@ -16,16 +11,7 @@ async function sendErrorEmail(error: Error): Promise<void> {
     <pre>${error.stack || 'No stack trace available'}</pre>
   `
 
-  await ses.send(
-    new SendEmailCommand({
-      Source: EMAIL_FROM,
-      Destination: { ToAddresses: [EMAIL_TO] },
-      Message: {
-        Subject: { Data: '[Error] Access Logger: Unexpected Error' },
-        Body: { Html: { Data: emailBody } },
-      },
-    })
-  )
+  await sendEmail('[Error] Access Logger: Unexpected Error', emailBody)
 }
 
 export async function handleError(

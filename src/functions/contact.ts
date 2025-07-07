@@ -1,13 +1,8 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { SendEmailCommand } from '@aws-sdk/client-ses'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
 import { handleError } from '../shared/error-handler.js'
 import { getRandomGifUrl } from '../shared/gif.js'
-import { ses } from '../shared/ses-client.js'
+import { sendEmail } from '../shared/ses-client.js'
 import { response } from '../shared/utils.js'
-
-const EMAIL_FROM = process.env.EMAIL_FROM!
-const EMAIL_TO = process.env.EMAIL_TO!
 
 interface ContactBody {
   name: string
@@ -40,15 +35,7 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     const randomGifUrl = await getRandomGifUrl()
 
-    await ses.send(
-      new SendEmailCommand({
-        Source: EMAIL_FROM,
-        Destination: { ToAddresses: [EMAIL_TO] },
-        Message: {
-          Subject: { Data: `Contact Form: ${subject}` },
-          Body: {
-            Html: {
-              Data: `
+    const htmlBody = `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#333;line-height:1.5;margin:0;padding:24px;">
   <img src="${randomGifUrl}" alt="Celebration GIF" style="margin: 0 24px; max-width: 100%; height: auto;" />
   <h1 style="margin-top:0;color:#1e293b;">Contact Form Submission</h1>
@@ -58,12 +45,9 @@ export const handler: APIGatewayProxyHandler = async event => {
   <p><strong>Message:</strong></p>
   <p>${message}</p>
 </div>
-`.trim(),
-            },
-          },
-        },
-      })
-    )
+`.trim()
+
+    await sendEmail(`Contact Form: ${subject}`, htmlBody)
 
     return response(200, { message: 'Message sent' })
   } catch (error) {
