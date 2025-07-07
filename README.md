@@ -58,6 +58,7 @@ await fetch('https://your-api.com/dev/log-access', {
 ```
 
 ## 📬 Example Email Report
+
 ![image](https://github.com/user-attachments/assets/2ac21006-4b3b-47a5-b127-7d9959128055)
 
 The daily report includes:
@@ -65,6 +66,7 @@ The daily report includes:
 - Random celebration GIF, powered by Giphy
 - Total access count
 - Breakdown by:
+
   - App
   - Browsers
   - Operating systems

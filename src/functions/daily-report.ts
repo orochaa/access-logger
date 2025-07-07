@@ -4,6 +4,7 @@ import { SendEmailCommand } from '@aws-sdk/client-ses'
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
 import { dynamo } from '../shared/dynamodb-client.js'
+import { handleError } from '../shared/error-handler.js'
 import { getRandomGifUrl } from '../shared/gif.js'
 import { ses } from '../shared/ses-client.js'
 import { response } from '../shared/utils.js'
@@ -33,9 +34,7 @@ export const handler: APIGatewayProxyHandler = async () => {
 
     return response(200, { message: 'Report sent' })
   } catch (error) {
-    console.error(error)
-
-    return response(500, { message: 'Internal Server Error' })
+    return handleError(error)
   }
 }
 

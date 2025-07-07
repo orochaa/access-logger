@@ -2,6 +2,7 @@ import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
 import { randomUUID } from 'node:crypto'
 import { dynamo } from '../shared/dynamodb-client.js'
+import { handleError } from '../shared/error-handler.js'
 import { TABLE_NAME, response } from '../shared/utils.js'
 
 interface LogAccessBody {
@@ -64,8 +65,6 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     return response(201)
   } catch (error) {
-    console.error(error)
-
-    return response(500, { message: 'Internal Server Error' })
+    return handleError(error)
   }
 }

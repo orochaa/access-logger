@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { SendEmailCommand } from '@aws-sdk/client-ses'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
+import { handleError } from '../shared/error-handler.js'
+import { getRandomGifUrl } from '../shared/gif.js'
 import { ses } from '../shared/ses-client.js'
 import { response } from '../shared/utils.js'
-import { getRandomGifUrl } from '../shared/gif.js'
 
 const EMAIL_FROM = process.env.EMAIL_FROM!
 const EMAIL_TO = process.env.EMAIL_TO!
@@ -66,8 +67,6 @@ export const handler: APIGatewayProxyHandler = async event => {
 
     return response(200, { message: 'Message sent' })
   } catch (error) {
-    console.error(error)
-
-    return response(500, { message: 'Internal Server Error' })
+    return handleError(error)
   }
 }
