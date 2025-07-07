@@ -14,26 +14,22 @@ const EMAIL_TO = process.env.EMAIL_TO!
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const accessLogs = await getAccessLogs()
+    const now = new Date()
+    const start = new Date(now.getTime() - 86_400_000)
+    const accessLogs = await getAccessLogs(start, now)
+    const randomGifUrl = await getRandomGifUrl()
+
+    let reportContent: string
 
     if (accessLogs.length === 0) {
-      return response(204, { message: 'There is nothing to report' })
+      reportContent = generateNoAccessReportContent(start, now)
+    } else {
+      const report = generateReport(accessLogs)
+      reportContent = formatReport(report, start, now)
     }
 
-    const randomGifUrl = await getRandomGifUrl()
-    const report = generateReport(accessLogs)
-    const formattedReport = formatReport(report, randomGifUrl)
-
-    await ses.send(
-      new SendEmailCommand({
-        Source: EMAIL_FROM,
-        Destination: { ToAddresses: [EMAIL_TO] },
-        Message: {
-          Subject: { Data: `Daily Access Report` },
-          Body: { Html: { Data: formattedReport } },
-        },
-      })
-    )
+    const formattedReport = formatHtmlShell(reportContent, randomGifUrl)
+    await sendReportEmail(formattedReport)
 
     return response(200, { message: 'Report sent' })
   } catch (error) {
@@ -43,10 +39,7 @@ export const handler: APIGatewayProxyHandler = async () => {
   }
 }
 
-async function getAccessLogs(): Promise<AccessLog[]> {
-  const NOW = new Date()
-  const START = new Date(NOW.getTime() - 86_400_000)
-
+async function getAccessLogs(start: Date, end: Date): Promise<AccessLog[]> {
   const res = await dynamo.send(
     new ScanCommand({
       TableName: TABLE_NAME,
@@ -55,8 +48,8 @@ async function getAccessLogs(): Promise<AccessLog[]> {
         '#ts': 'timestamp',
       },
       ExpressionAttributeValues: {
-        ':start': START.toISOString(),
-        ':end': NOW.toISOString(),
+        ':start': start.toISOString(),
+        ':end': end.toISOString(),
       },
     })
   )
@@ -67,6 +60,45 @@ async function getAccessLogs(): Promise<AccessLog[]> {
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
   return accessLogs
+}
+
+async function sendReportEmail(htmlBody: string): Promise<void> {
+  await ses.send(
+    new SendEmailCommand({
+      Source: EMAIL_FROM,
+      Destination: { ToAddresses: [EMAIL_TO] },
+      Message: {
+        Subject: { Data: `Daily Access Report` },
+        Body: { Html: { Data: htmlBody } },
+      },
+    })
+  )
+}
+
+function formatHtmlShell(content: string, randomGifUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Daily Access Report</title>
+</head>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#333;line-height:1.5;margin:0;padding:24px;">
+  <img src="${randomGifUrl}" alt="Celebration GIF" style="margin: 0 24px; max-width: 100%; height: auto;" />
+  <h1 style="margin-top:0;color:#1e293b;">Daily Access Report</h1>
+  ${content}
+</body>
+</html>
+`.trim()
+}
+
+function generateNoAccessReportContent(start: Date, end: Date): string {
+  return `
+  <p style="margin:4px 0 16px;">
+    <strong>Window (UTC):</strong> ${formatDate(start)} → ${formatDate(end)}<br/>
+    <strong>There were no accesses in the last 24 hours.</strong>
+  </p>
+  `
 }
 
 interface AppReport {
@@ -114,11 +146,8 @@ function generateReport(accessLogs: AccessLog[]): AppReport[] {
     })
 }
 
-function formatReport(report: AppReport[], randomGifUrl: string): string {
+function formatReport(report: AppReport[], start: Date, end: Date): string {
   let count = 0
-  const NOW = new Date()
-  const END = NOW
-  const START = new Date(NOW.getTime() - 86_400_000)
 
   const appSections = report
     .map(appReport => {
@@ -177,28 +206,14 @@ function formatReport(report: AppReport[], randomGifUrl: string): string {
     })
     .join('')
 
-  const formattedReport = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Daily Access Report</title>
-</head>
-<body style="font-family:Arial,Helvetica,sans-serif;color:#333;line-height:1.5;margin:0;padding:24px;">
-  <img src="${randomGifUrl}" alt="Celebration GIF" style="margin: 0 24px; max-width: 100%; height: auto;" />
-  <h1 style="margin-top:0;color:#1e293b;">Daily Access Report</h1>
-
+  const summary = `
   <p style="margin:4px 0 16px;">
     <strong>Accesses:</strong> ${count}<br/>
-    <strong>Window (UTC):</strong> ${formatDate(START)} → ${formatDate(END)}
+    <strong>Window (UTC):</strong> ${formatDate(start)} → ${formatDate(end)}
   </p>
+  `
 
-  ${appSections}
-</body>
-</html>
-`.trim()
-
-  return formattedReport
+  return `${summary}${appSections}`
 }
 
 const formatDate = (date: Date): string => {
