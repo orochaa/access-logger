@@ -58,6 +58,18 @@ functions:
           method: post
           cors: true
 
+  monthly-report:
+    handler: src/functions/monthly-report.handler
+    events:
+      # Cron runs every 1st day of the month at 23:00 UTC (≘ 20:00 America/Sao_Paulo all year)
+      - eventBridge:
+          schedule: cron(0 23 1 * ? *)
+      # Extra GET endpoint for testing
+      - http:
+          path: /monthly-report
+          method: get
+          cors: true
+
 resources:
   Resources:
     AccessTable:

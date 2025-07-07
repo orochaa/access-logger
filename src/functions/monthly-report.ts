@@ -13,25 +13,52 @@ import {
 export const handler: APIGatewayProxyHandler = async () => {
   try {
     const now = new Date()
-    const start = new Date(now.getTime() - 86_400_000)
-    const accessLogs = await getAccessLogs(start, now)
+
+    const firstDayOfLastMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      1,
+      0 + 3
+    )
+
+    const lastDayOfLastMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23 + 3,
+      59,
+      59
+    )
+
+    const accessLogs = await getAccessLogs(
+      firstDayOfLastMonth,
+      lastDayOfLastMonth
+    )
     const randomGifUrl = await getRandomGifUrl()
 
     let reportContent: string
 
     if (accessLogs.length === 0) {
-      reportContent = generateNoAccessReportContent('day', start, now)
+      reportContent = generateNoAccessReportContent(
+        'month',
+        firstDayOfLastMonth,
+        lastDayOfLastMonth
+      )
     } else {
       const report = generateReport(accessLogs)
-      reportContent = formatReport(report, start, now)
+      reportContent = formatReport(
+        report,
+        firstDayOfLastMonth,
+        lastDayOfLastMonth
+      )
     }
 
     const formattedReport = formatHtmlShell(
-      'Daily Access Report',
+      'Monthly Access Report',
       reportContent,
       randomGifUrl
     )
-    await sendReportEmail('Daily Access Report', formattedReport)
+    await sendReportEmail('Monthly Access Report', formattedReport)
 
     return { statusCode: 200, body: JSON.stringify({ message: 'Report sent' }) }
   } catch (error) {

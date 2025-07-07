@@ -1,9 +1,9 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import type { APIGatewayProxyHandler } from 'aws-lambda'
 import { randomUUID } from 'node:crypto'
-import { dynamo } from '../shared/dynamodb-client.js'
+import { TABLE_NAME, dynamo } from '../shared/dynamodb-client.js'
 import { handleError } from '../shared/error-handler.js'
-import { TABLE_NAME, response } from '../shared/utils.js'
+import { response } from '../shared/utils.js'
 
 interface LogAccessBody {
   appName: string
